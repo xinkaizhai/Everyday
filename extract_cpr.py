@@ -1,10 +1,18 @@
 import os
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
 import pandas as pd
 
 
-def extract_1mo_cpr(folder, end_date="06/2026"):
+def parse_dmm_to_mmyyyy(label):
+    """Convert d-mmm (e.g. 26-Jun) to mm/yyyy using year inference."""
+    dt = datetime.strptime(str(label).strip(), "%d-%b")
+    now = datetime.now()
+    # If month is ahead of current month, it belongs to the previous year
+    year = now.year if dt.month <= now.month else now.year - 1
+    return datetime(year, dt.month, 1).strftime("%m/%Y")
+
+
+def extract_1mo_cpr(folder):
     results = []
 
     for filename in os.listdir(folder):
@@ -15,30 +23,22 @@ def extract_1mo_cpr(folder, end_date="06/2026"):
         filepath = os.path.join(folder, filename)
 
         df = pd.read_csv(filepath, header=None)
+
+        months = df.iloc[1]
         cpr_row = df.iloc[16]
 
-        # Collect non-null CPR values starting from column index 3
-        cpr_values = []
-        for col_idx in range(3, len(cpr_row)):
-            cpr = cpr_row[col_idx]
-            if pd.isna(cpr):
-                break
-            cpr_values.append(cpr)
-
-        # Generate date labels going back from end_date
-        end_dt = datetime.strptime(end_date, "%m/%Y")
-        date_labels = [
-            (end_dt - relativedelta(months=i)).strftime("%m/%Y")
-            for i in range(len(cpr_values) - 1, -1, -1)
-        ]
-
         row = {"CUSIP": cusip}
-        for label, cpr in zip(date_labels, cpr_values):
+        for col_idx in range(3, len(months)):
+            raw_month = months[col_idx]
+            cpr = cpr_row[col_idx]
+            if pd.isna(raw_month) or pd.isna(cpr):
+                continue
+            label = parse_dmm_to_mmyyyy(raw_month)
             row[label] = cpr
 
         results.append(row)
 
-    # Collect all date columns and sort oldest to newest
+    # Sort date columns oldest to newest
     all_dates = sorted(
         set(k for r in results for k in r if k != "CUSIP"),
         key=lambda x: datetime.strptime(x, "%m/%Y")
@@ -50,6 +50,6 @@ def extract_1mo_cpr(folder, end_date="06/2026"):
 
 if __name__ == "__main__":
     folder = r"K:\path\to\your\folder"  # update this path
-    output_df = extract_1mo_cpr(folder, end_date="06/2026")
+    output_df = extract_1mo_cpr(folder)
     print(output_df)
     output_df.to_excel("CPR_summary.xlsx", index=False)
