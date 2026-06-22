@@ -6,7 +6,7 @@ def extract_1mo_cpr(folder):
     results = []
 
     for filename in os.listdir(folder):
-        if not filename.endswith("_Cstats.csv"):
+        if "_CStat" not in filename or not filename.endswith(".csv"):
             continue
 
         cusip = filename[:9]
