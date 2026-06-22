@@ -31,7 +31,7 @@ def extract_1mo_cpr(folder):
 
     # Sort month columns chronologically
     month_cols = [c for c in output_df.columns if c != "CUSIP"]
-    month_cols = sorted(month_cols, key=lambda x: pd.to_datetime(x, format="%d-%b"))
+    month_cols = sorted(month_cols, key=lambda x: pd.to_datetime(x, format="%b %y"))
     output_df = output_df[["CUSIP"] + month_cols]
 
     return output_df
