@@ -32,13 +32,7 @@ def extract_1mo_cpr(folder):
 
     # Sort month columns oldest to newest and rename to mm/yyyy
     month_cols = [c for c in output_df.columns if c != "CUSIP"]
-    def infer_date(label):
-        dt = datetime.strptime(label, "%d-%b")
-        now = datetime.now()
-        year = now.year if dt.month <= now.month else now.year - 1
-        return dt.replace(year=year)
-
-    parsed = {m: infer_date(m) for m in month_cols}
+    parsed = {m: datetime.strptime(m, "%y-%b") for m in month_cols}
     month_cols = sorted(month_cols, key=lambda x: parsed[x])
     output_df = output_df[["CUSIP"] + month_cols]
     rename_map = {m: parsed[m].strftime("%m/%Y") for m in month_cols}
