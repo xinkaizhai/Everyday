@@ -31,7 +31,7 @@ def extract_1mo_cpr(folder):
 
     # Sort month columns oldest to newest and rename to mm/yyyy
     month_cols = [c for c in output_df.columns if c != "CUSIP"]
-    parsed = {m: pd.to_datetime(m, format="%b %y") for m in month_cols}
+    parsed = {m: pd.to_datetime(m, dayfirst=True) for m in month_cols}
     month_cols = sorted(month_cols, key=lambda x: parsed[x])
     output_df = output_df[["CUSIP"] + month_cols]
     rename_map = {m: parsed[m].strftime("%m/%Y") for m in month_cols}
