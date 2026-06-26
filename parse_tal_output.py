@@ -19,23 +19,24 @@ def read_multi_json(filepath):
     return records
 
 
-def parse_tal_output(filepath):
-    records = read_multi_json(filepath)
+def parse_tal_output(data):
+    """
+    data: a single dict or a list of dicts from json.loads() / read_multi_json()
+    """
+    if isinstance(data, dict):
+        data = [data]
 
     all_headers = []
     all_cashflows = []
 
-    for data in records:
-        # Header fields (everything except CashFlowList)
-        header = {k: v for k, v in data.items() if k != "CashFlowList"}
+    for record in data:
+        header = {k: v for k, v in record.items() if k != "CashFlowList"}
         all_headers.append(header)
 
-        # CashFlow records
-        if "CashFlowList" in data:
-            cashflow_df = pd.DataFrame(data["CashFlowList"])
+        if "CashFlowList" in record:
+            cashflow_df = pd.DataFrame(record["CashFlowList"])
             cashflow_df["Date"] = pd.to_datetime(cashflow_df["Date"], format="%Y%m%d")
 
-            # Reorder columns nicely
             cols = ["Date", "Balance", "CashFlow", "Interest", "Principal",
                     "Prepayment", "DiscountFactor", "ExRate", "Term"]
             cols = [c for c in cols if c in cashflow_df.columns]
@@ -50,7 +51,14 @@ def parse_tal_output(filepath):
 
 if __name__ == "__main__":
     filepath = r"K:\path\to\TAL_JSON_Output.txt"  # update this path
-    header_df, cashflow_df = parse_tal_output(filepath)
+
+    # From file
+    records = read_multi_json(filepath)
+    header_df, cashflow_df = parse_tal_output(records)
+
+    # From json.loads()
+    # data = json.loads(some_string)
+    # header_df, cashflow_df = parse_tal_output(data)
 
     print("=== Header ===")
     print(header_df.T)
